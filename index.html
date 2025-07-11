@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For SAP Item Photo - 4.2 (Enhanced Background Removal)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 800px;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .drop-zone.dragover {
+            border-color: #007bff;
+            background-color: #e6f0ff;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 5px;
+            margin: 5px 0;
+        }
+        canvas.preview {
+            max-width: 80px;
+            max-height: 80px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            flex-shrink: 0;
+        }
+        #status {
+            margin-top: 10px;
+            color: #555;
+            min-height: 1.2em;
+        }
+        #fileList {
+            margin-top: 10px;
+            text-align: left;
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 5px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            padding: 8px 5px;
+            border-bottom: 1px solid #eee;
+            gap: 6px;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-item span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 80px;
+            max-width: 150px;
+            flex-shrink: 1;
+            font-size: 0.9em;
+        }
+        .file-item input[type="text"] {
+            flex: 1 1 auto;
+            min-width: 80px;
+            margin-left: 5px;
+        }
+        .file-item label {
+             white-space: nowrap;
+             font-size: 0.9em;
+             margin-left: 4px;
+             display: flex;
+             align-items: center;
+             cursor: pointer;
+        }
+        .file-item input[type="checkbox"] {
+            margin-right: 3px;
+            vertical-align: middle;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+        .bg-options {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-left: 1px solid #ddd;
+            padding-left: 8px;
+            margin-left: 5px;
+        }
+        .bg-option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .bg-option-group label {
+            font-size: 0.8em;
+            margin: 0;
+        }
+        .bg-option-group input[type="number"] {
+            width: 50px;
+            font-size: 0.8em;
+        }
+        .advanced-settings {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+        }
+        .advanced-settings h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+        }
+        .setting-group label {
+            min-width: 120px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>For SAP Item Photo - 4.2 (Enhanced)</h2>
+        <h4>自動調整大小為600x600並轉為灰階(PNG)，支援多重背景處理選項。處理後打包成ZIP下載。</h4>
+        
+        <div class="advanced-settings">
+            <h4>全域設定</h4>
+            <div class="setting-group">
+                <label>去背容差:</label>
+                <input type="number" id="globalTolerance" value="50" min="10" max="200" title="顏色相似度容差 (較低=更精確)">
+            </div>
+            <div class="setting-group">
+                <label>邊緣羽化:</label>
+                <input type="number" id="globalFeather" value="10" min="0" max="50" title="邊緣羽化像素數">
+            </div>
+            <div class="setting-group">
+                <label>取樣密度:</label>
+                <input type="number" id="globalSampleDist" value="3" min="1" max="10" title="邊緣取樣間隔">
+            </div>
+        </div>
+        
+        <div id="dropZone" class="drop-zone">
+            拖放圖片到此處或點擊選擇檔案 (可批量)
+            <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+        </div>
+        <div id="fileList"></div>
+        <button id="processButton" style="display: none;" disabled>開始處理並打包 ZIP</button>
+        <div id="status">等待上傳...</div>
+        <canvas id="canvas" style="display: none;"></canvas>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const imageInput = document.getElementById('imageInput');
+        const fileList = document.getElementById('fileList');
+        const processButton = document.getElementById('processButton');
+        const status = document.getElementById('status');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let filesToProcess = [];
+        let imageDataArray = [];
+        const MAX_FILES = 100;
+
+        // Drag & Drop Events
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        dropZone.addEventListener('click', () => { imageInput.click(); });
+        imageInput.addEventListener('change', () => {
+            handleFiles(imageInput.files);
+            imageInput.value = '';
+        });
+
+        function handleFiles(files) {
+            status.classList.remove('error-message');
+            status.style.color = '#555';
+
+            if (files.length > MAX_FILES) {
+                status.textContent = `錯誤：一次最多只能處理 ${MAX_FILES} 個檔案，您選擇了 ${files.length} 個。`;
+                status.classList.add('error-message');
+                resetPartialUI();
+                return;
+            }
+
+             const potentialFiles = Array.from(files).filter(file => {
+                const isImage = file.type.startsWith('image/');
+                if (!isImage) console.warn(`Skipping non-image file: ${file.name}`);
+                return isImage;
+            });
+
+            if (potentialFiles.length === 0 && files.length > 0) {
+                 status.textContent = '選取的檔案中沒有有效的圖片格式。';
+                 status.classList.add('error-message');
+                 resetPartialUI();
+                 return;
+            } else if (potentialFiles.length === 0) {
+                 status.textContent = '未選擇有效圖片檔案。';
+                 resetPartialUI();
+                 return;
+            }
+
+            filesToProcess = potentialFiles;
+            imageDataArray = new Array(filesToProcess.length);
+
+            status.textContent = `已選擇 ${filesToProcess.length} 個圖片檔案。請確認檔名與背景選項。`;
+            fileList.innerHTML = '';
+
+            let loadPromises = filesToProcess.map((file, index) => {
+                return new Promise((resolve, reject) => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.id = `file-item-${index}`;
+                    const previewCanvas = document.createElement('canvas');
+                    previewCanvas.className = 'preview';
+                    previewCanvas.id = `preview-${index}`;
+                    const defaultName = file.name.split('.').slice(0, -1).join('.') || file.name;
+
+                    // 改進的選項：允許多重選擇
+                    div.innerHTML = `
+                        <span title="${file.name}">${file.name}</span>
+                        <input type="text" value="${defaultName}" data-index="${index}" title="輸出檔名 (不含.png)">
+                        <div class="bg-options" data-index="${index}">
+                            <div class="bg-option-group">
+                                <label title="將背景填充為白色"><input type="checkbox" class="fill-white-bg" data-index="${index}"> 填白</label>
+                            </div>
+                            <div class="bg-option-group">
+                                <label title="使用圖片主要顏色填充透明區域"><input type="checkbox" class="fill-dominant-bg" data-index="${index}"> 填充主色</label>
+                            </div>
+                            <div class="bg-option-group">
+                                <label title="移除背景色"><input type="checkbox" class="remove-bg" data-index="${index}"> 去背</label>
+                                <input type="number" class="tolerance" value="50" min="10" max="200" title="容差" style="width: 40px;">
+                            </div>
+                            <div class="bg-option-group">
+                                <label title="邊緣羽化"><input type="checkbox" class="feather-edges" data-index="${index}"> 羽化</label>
+                                <input type="number" class="feather-amount" value="5" min="1" max="20" title="羽化程度" style="width: 40px;">
+                            </div>
+                        </div>
+                    `;
+                    div.prepend(previewCanvas);
+                    fileList.appendChild(div);
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            imageDataArray[index] = { img, file };
+                            updatePreview(index);
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            console.error(`Failed to load image: ${file.name}`);
+                            markItemAsError(index, '無法載入圖片');
+                            reject(new Error(`Failed to load ${file.name}`));
+                        };
+                        try { img.src = event.target.result; } catch (e) { reject(e); }
+                    };
+                    reader.onerror = () => {
+                        console.error(`Failed to read file: ${file.name}`);
+                        markItemAsError(index, '無法讀取檔案');
+                        reject(new Error(`Failed to read ${file.name}`));
+                    };
+                    reader.readAsDataURL(file);
+
+                    // 監聽選項變更
+                    const bgOptionsDiv = div.querySelector('.bg-options');
+                    bgOptionsDiv.addEventListener('change', () => {
+                        updatePreview(index);
+                    });
+                });
+            });
+
+            Promise.allSettled(loadPromises).then(results => {
+                const loadedSuccessfully = results.some(r => r.status === 'fulfilled');
+                const failedCount = results.filter(r => r.status === 'rejected').length;
+
+                 if (failedCount > 0) {
+                    status.textContent += ` (${failedCount} 個檔案載入失敗)`;
+                    status.classList.add('error-message');
+                 }
+                if (loadedSuccessfully) {
+                    processButton.style.display = 'block';
+                    processButton.disabled = false;
+                } else {
+                     status.textContent = '所有圖片檔案均無法載入。';
+                     status.classList.add('error-message');
+                     resetPartialUI();
+                }
+            });
+        }
+
+        function markItemAsError(index, message) {
+             const itemDiv = document.getElementById(`file-item-${index}`);
+             if (itemDiv) {
+                 itemDiv.style.opacity = '0.5';
+                 itemDiv.style.borderLeft = '3px solid red';
+                 itemDiv.title = message;
+                 itemDiv.querySelectorAll('input').forEach(cb => cb.disabled = true);
+             }
+             const previewCanvas = document.getElementById(`preview-${index}`);
+             if (previewCanvas) {
+                 const prevCtx = previewCanvas.getContext('2d');
+                 prevCtx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                 prevCtx.fillRect(0,0, previewCanvas.width, previewCanvas.height);
+             }
+        }
+
+         function resetPartialUI() {
+            fileList.innerHTML = '';
+            processButton.style.display = 'none';
+            processButton.disabled = true;
+            imageDataArray = [];
+         }
+
+        function updatePreview(index) {
+            if (!imageDataArray[index] || !imageDataArray[index].img) return;
+            try {
+                const { img } = imageDataArray[index];
+                const previewCanvas = document.getElementById(`preview-${index}`);
+                if (!previewCanvas) return;
+                const previewCtx = previewCanvas.getContext('2d');
+                const previewSize = 80;
+                previewCanvas.width = previewSize;
+                previewCanvas.height = previewSize;
+
+                let scale = Math.min(previewSize / img.width, previewSize / img.height);
+                let newWidth = img.width * scale;
+                let newHeight = img.height * scale;
+                let offsetX = (previewSize - newWidth) / 2;
+                let offsetY = (previewSize - newHeight) / 2;
+
+                previewCtx.clearRect(0, 0, previewSize, previewSize);
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = previewSize;
+                tempCanvas.height = previewSize;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                // 獲取選項狀態
+                const fillWhite = document.querySelector(`.fill-white-bg[data-index="${index}"]`)?.checked;
+                const fillDominant = document.querySelector(`.fill-dominant-bg[data-index="${index}"]`)?.checked;
+                const removeBg = document.querySelector(`.remove-bg[data-index="${index}"]`)?.checked;
+                const featherEdges = document.querySelector(`.feather-edges[data-index="${index}"]`)?.checked;
+                const tolerance = parseInt(document.querySelector(`.tolerance[data-index="${index}"]`)?.value || 50);
+                const featherAmount = parseInt(document.querySelector(`.feather-amount[data-index="${index}"]`)?.value || 5);
+
+                // 背景處理
+                tempCtx.clearRect(0, 0, previewSize, previewSize);
+                if (fillWhite) {
+                    tempCtx.fillStyle = 'white';
+                    tempCtx.fillRect(0, 0, previewSize, previewSize);
+                }
+
+                tempCtx.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+
+                // 後處理
+                if (removeBg) {
+                    let bgColor = getBackgroundColor(tempCtx, previewSize, previewSize);
+                    if (bgColor) {
+                        removeBackgroundEnhanced(tempCtx, previewSize, previewSize, bgColor, tolerance, featherEdges ? featherAmount : 0);
+                    }
+                } else if (fillDominant) {
+                    let bgColor = getBackgroundColor(tempCtx, previewSize, previewSize);
+                    if (bgColor) {
+                        fillTransparentBackground(tempCtx, previewSize, previewSize, bgColor);
+                    }
+                }
+
+                // 灰階處理
+                const tempImageData = tempCtx.getImageData(0, 0, previewSize, previewSize);
+                const tempData = tempImageData.data;
+                for (let i = 0; i < tempData.length; i += 4) {
+                    const gray = 0.2126 * tempData[i] + 0.7152 * tempData[i + 1] + 0.0722 * tempData[i + 2];
+                    tempData[i] = tempData[i + 1] = tempData[i + 2] = gray;
+                }
+                tempCtx.putImageData(tempImageData, 0, 0);
+
+                // 顯示預覽
+                previewCtx.clearRect(0, 0, previewSize, previewSize);
+                if (removeBg) {
+                    // 顯示棋盤格背景表示透明
+                    previewCtx.fillStyle = '#eee'; 
+                    previewCtx.fillRect(0,0,previewSize/2,previewSize/2); 
+                    previewCtx.fillRect(previewSize/2,previewSize/2,previewSize/2,previewSize/2);
+                    previewCtx.fillStyle = '#ccc'; 
+                    previewCtx.fillRect(previewSize/2,0,previewSize/2,previewSize/2); 
+                    previewCtx.fillRect(0,previewSize/2,previewSize/2,previewSize/2);
+                }
+                previewCtx.drawImage(tempCanvas, 0, 0);
+
+            } catch (error) {
+                console.error(`Error updating preview for index ${index}:`, error);
+                markItemAsError(index, '預覽時發生錯誤');
+            }
+        }
+
+        // Process Button Click
+        processButton.addEventListener('click', async () => {
+            if (filesToProcess.length === 0 || imageDataArray.filter(Boolean).length === 0) {
+                status.textContent = '沒有可處理的圖片檔案 (或圖片載入失敗)。';
+                 status.classList.add('error-message');
+                return;
+            }
+
+            status.classList.remove('error-message');
+            processButton.disabled = true;
+            processButton.textContent = '處理中...';
+
+            const customNames = filesToProcess.map((_, index) => {
+                const input = fileList.querySelector(`input[type="text"][data-index="${index}"]`);
+                return input ? input.value.trim() : `processed_${index + 1}`;
+            });
+
+            const options = filesToProcess.map((_, index) => ({
+                fillWhite: fileList.querySelector(`.fill-white-bg[data-index="${index}"]`)?.checked ?? false,
+                fillDominant: fileList.querySelector(`.fill-dominant-bg[data-index="${index}"]`)?.checked ?? false,
+                removeBg: fileList.querySelector(`.remove-bg[data-index="${index}"]`)?.checked ?? false,
+                featherEdges: fileList.querySelector(`.feather-edges[data-index="${index}"]`)?.checked ?? false,
+                tolerance: parseInt(fileList.querySelector(`.tolerance[data-index="${index}"]`)?.value || 50),
+                featherAmount: parseInt(fileList.querySelector(`.feather-amount[data-index="${index}"]`)?.value || 5)
+            }));
+
+            await processFilesAndZip(filesToProcess, customNames, options);
+
+            processButton.disabled = false;
+            processButton.textContent = '開始處理並打包 ZIP';
+        });
+
+        async function processFilesAndZip(files, customNames, options) {
+            const processedBlobs = [];
+            const totalFiles = files.length;
+            let processedCount = 0;
+            let errorCount = 0;
+
+            status.textContent = `正在處理 ${totalFiles} 個檔案... (0%)`;
+
+            for (let index = 0; index < totalFiles; index++) {
+                const file = files[index];
+                const imgData = imageDataArray[index];
+                const option = options[index];
+
+                if (!imgData || !imgData.img) {
+                    console.warn(`Skipping ${file.name}: Image data not loaded.`);
+                    errorCount++;
+                    processedCount++;
+                    updateProgress(processedCount, totalFiles);
+                    markItemAsError(index, `跳過: 圖片未載入`);
+                    continue;
+                }
+
+                const img = imgData.img;
+                const customName = customNames[index];
+                const finalName = customName || file.name.split('.').slice(0, -1).join('.') || `image_${index + 1}`;
+                const outputFileName = `${finalName}.png`;
+
+                try {
+                    canvas.width = 600;
+                    canvas.height = 600;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    let scale = Math.min(600 / img.width, 600 / img.height);
+                    let newWidth = img.width * scale;
+                    let newHeight = img.height * scale;
+                    let offsetX = (600 - newWidth) / 2;
+                    let offsetY = (600 - newHeight) / 2;
+
+                    // 背景處理
+                    if (option.fillWhite) {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+
+                    ctx.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+
+                    // 後處理
+                    if (option.removeBg) {
+                        let bgColor = getBackgroundColor(ctx, canvas.width, canvas.height);
+                        if (bgColor) {
+                            removeBackgroundEnhanced(ctx, canvas.width, canvas.height, bgColor, option.tolerance, option.featherEdges ? option.featherAmount : 0);
+                        }
+                    } else if (option.fillDominant) {
+                        let bgColor = getBackgroundColor(ctx, canvas.width, canvas.height);
+                        if (bgColor) {
+                            fillTransparentBackground(ctx, canvas.width, canvas.height, bgColor);
+                        }
+                    }
+
+                    // 灰階處理
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const gray = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+                        data[i] = data[i + 1] = data[i + 2] = gray;
+                        if (!option.removeBg) data[i+3] = 255;
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+
+                    const blob = await new Promise((resolve) => { canvas.toBlob(resolve, 'image/png'); });
+
+                    if (blob) {
+                        processedBlobs.push({ filename: outputFileName, blob: blob });
+                        const itemDiv = document.getElementById(`file-item-${index}`);
+                        if(itemDiv) itemDiv.style.borderLeft = '3px solid green';
+                    } else {
+                        throw new Error("Canvas toBlob failed.");
+                    }
+
+                    processedCount++;
+                    updateProgress(processedCount, totalFiles);
+
+                } catch (error) {
+                    console.error(`Error processing file ${file.name}:`, error);
+                    errorCount++;
+                    processedCount++;
+                    updateProgress(processedCount, totalFiles);
+                    markItemAsError(index, `處理失敗: ${error.message.substring(0, 50)}`);
+                }
+            }
+
+            if (processedBlobs.length > 0) {
+                status.textContent = `處理完成 (${totalFiles - errorCount} 成功 / ${errorCount} 失敗)。正在產生 ZIP 檔案...`;
+                try {
+                    const zip = new JSZip();
+                    processedBlobs.forEach(({ filename, blob }) => {
+                        zip.file(filename, blob);
+                    });
+
+                    const zipBlob = await zip.generateAsync(
+                        { type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } },
+                        (metadata) => { status.textContent = `正在壓縮檔案... ${metadata.percent.toFixed(0)}%`; }
+                    );
+
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(zipBlob);
+                    link.download = `sap_item_photos_${Date.now()}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+
+                    status.textContent = `ZIP 檔案 '${link.download}' 已產生並開始下載 (${processedBlobs.length} 個檔案)。`;
+
+                } catch (zipError) {
+                    console.error('Error generating ZIP file:', zipError);
+                    status.textContent = '產生 ZIP 檔案時發生錯誤。';
+                    status.classList.add('error-message');
+                }
+            } else if (errorCount === totalFiles) {
+                 status.textContent = '所有檔案處理失敗，無法產生 ZIP 檔案。';
+                 status.classList.add('error-message');
+            } else {
+                 status.textContent = '沒有成功處理的檔案可供打包。';
+                 status.classList.add('error-message');
+            }
+             resetUI();
+        }
+
+        function updateProgress(completed, total) {
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            status.textContent = `正在處理 ${total} 個檔案... (${percentage}%) - 已完成 ${completed}/${total}`;
+        }
+
+         function resetUI() {
+            imageInput.value = '';
+            filesToProcess = [];
+            imageDataArray = [];
+            fileList.innerHTML = '';
+            processButton.style.display = 'none';
+            processButton.disabled = true;
+            processButton.textContent = '開始處理並打包 ZIP';
+            setTimeout(() => {
+                if (!processButton.disabled) {
+                   status.textContent = '等待上傳...';
+                   status.classList.remove('error-message');
+                }
+            }, 5000);
+         }
+
+        // 改進的背景處理函數
+        function kMeansClustering(pixels, k = 3, maxIterations = 10) {
+             if (!pixels || pixels.length === 0) return null;
+             try {
+                 const sampleSize = Math.min(pixels.length, 500);
+                 const samplePixels = [];
+                 const step = Math.max(1, Math.floor(pixels.length / sampleSize));
+                 for(let i = 0; i < pixels.length; i += step) {
+                    samplePixels.push(pixels[i]);
+                    if(samplePixels.length >= sampleSize) break;
+                 }
+
+                 if (samplePixels.length === 0) return null;
+
+                 let centroids = [];
+                 let usedIndices = new Set();
+                 for(let i = 0; i < samplePixels.length && centroids.length < k; ++i) {
+                     const pixelStr = samplePixels[i].join(',');
+                     if(!usedIndices.has(pixelStr)) {
+                        centroids.push([...samplePixels[i]]);
+                        usedIndices.add(pixelStr);
+                     }
+                 }
+                 while(centroids.length < k && samplePixels.length > 0) {
+                     centroids.push([...samplePixels[Math.floor(Math.random() * samplePixels.length)]]);
+                 }
+                 if(centroids.length === 0) return null;
+
+                 let clusters = new Array(samplePixels.length);
+                 for (let iteration = 0; iteration < maxIterations; iteration++) {
+                     let changed = false;
+                     for (let i = 0; i < samplePixels.length; i++) {
+                         let minDistanceSq = Infinity;
+                         let clusterIndex = -1;
+                         for (let j = 0; j < centroids.length; j++) {
+                             const distSq = (samplePixels[i][0] - centroids[j][0])**2 + (samplePixels[i][1] - centroids[j][1])**2 + (samplePixels[i][2] - centroids[j][2])**2;
+                             if (distSq < minDistanceSq) {
+                                 minDistanceSq = distSq;
+                                 clusterIndex = j;
+                             }
+                         }
+                         if (clusters[i] !== clusterIndex) {
+                             clusters[i] = clusterIndex;
+                             changed = true;
+                         }
+                     }
+
+                     if (!changed && iteration > 0) break;
+
+                     let counts = new Array(centroids.length).fill(0);
+                     let newCentroids = Array.from({ length: centroids.length }, () => [0, 0, 0]);
+                     for (let i = 0; i < samplePixels.length; i++) {
+                         const clusterIdx = clusters[i];
+                         if (clusterIdx !== undefined && clusterIdx >= 0 && clusterIdx < centroids.length) {
+                             newCentroids[clusterIdx][0] += samplePixels[i][0];
+                             newCentroids[clusterIdx][1] += samplePixels[i][1];
+                             newCentroids[clusterIdx][2] += samplePixels[i][2];
+                             counts[clusterIdx]++;
+                         }
+                     }
+
+                     for (let j = 0; j < centroids.length; j++) {
+                         if (counts[j] > 0) {
+                             centroids[j] = [
+                                 Math.round(newCentroids[j][0] / counts[j]),
+                                 Math.round(newCentroids[j][1] / counts[j]),
+                                 Math.round(newCentroids[j][2] / counts[j])
+                             ];
+                         } else if (samplePixels.length > 0){
+                             centroids[j] = [...samplePixels[Math.floor(Math.random() * samplePixels.length)]];
+                         }
+                     }
+                 }
+
+                 let clusterCounts = new Array(centroids.length).fill(0);
+                 clusters.forEach(cIdx => { if (cIdx !== undefined && cIdx >=0 && cIdx < centroids.length) clusterCounts[cIdx]++; });
+
+                 let maxClusterIndex = 0;
+                 for (let i = 1; i < centroids.length; i++) {
+                     if (clusterCounts[i] > clusterCounts[maxClusterIndex]) {
+                         maxClusterIndex = i;
+                     }
+                 }
+
+                 return centroids[maxClusterIndex] ? { r: centroids[maxClusterIndex][0], g: centroids[maxClusterIndex][1], b: centroids[maxClusterIndex][2] } : null;
+
+             } catch (error) { console.error('Error in kMeansClustering:', error); return null; }
+        }
+
+        function getBackgroundColor(ctx, width, height) {
+            try {
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                const borderPixels = [];
+                const sampleDist = parseInt(document.getElementById('globalSampleDist')?.value || 3);
+
+                // 取樣邊緣像素
+                for(let x = 0; x < width; x+= sampleDist) {
+                    let idxTop = (0 * width + x) * 4;
+                    let idxBottom = ((height - 1) * width + x) * 4;
+                    if(data[idxTop + 3] === 255) borderPixels.push([data[idxTop], data[idxTop+1], data[idxTop+2]]);
+                    if(data[idxBottom + 3] === 255) borderPixels.push([data[idxBottom], data[idxBottom+1], data[idxBottom+2]]);
+                }
+                 for(let y = 1; y < height - 1; y+= sampleDist) {
+                    let idxLeft = (y * width + 0) * 4;
+                    let idxRight = (y * width + (width - 1)) * 4;
+                     if(data[idxLeft + 3] === 255) borderPixels.push([data[idxLeft], data[idxLeft+1], data[idxLeft+2]]);
+                     if(data[idxRight + 3] === 255) borderPixels.push([data[idxRight], data[idxRight+1], data[idxRight+2]]);
+                 }
+
+                if (borderPixels.length < 5) {
+                    console.warn("Few border pixels found, sampling all opaque pixels for background color.");
+                    const allOpaquePixels = [];
+                     for (let i = 0; i < data.length; i += 4) {
+                         if (data[i+3] === 255) {
+                            allOpaquePixels.push([data[i], data[i+1], data[i+2]]);
+                         }
+                     }
+                     if(allOpaquePixels.length === 0) return { r: 255, g: 255, b: 255 };
+                     return kMeansClustering(allOpaquePixels, 2);
+                }
+
+                return kMeansClustering(borderPixels, 2);
+
+            } catch (error) {
+                console.error('Error in getBackgroundColor:', error);
+                return { r: 255, g: 255, b: 255 };
+            }
+        }
+
+        function fillTransparentBackground(ctx, width, height, color) {
+            if (!color) return;
+            try {
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
+                ctx.fillRect(0,0,width,height);
+                ctx.globalCompositeOperation = 'source-over';
+            } catch (error) { console.error('Error in fillTransparentBackground:', error); }
+        }
+
+        // 改進的去背函數，支援羽化
+        function removeBackgroundEnhanced(ctx, width, height, backgroundColor, tolerance = 50, featherAmount = 0) {
+            if (!backgroundColor) return;
+            try {
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                const toleranceSq = tolerance * tolerance;
+                const r = backgroundColor.r, g = backgroundColor.g, b = backgroundColor.b;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i + 3] > 0) {
+                        const colorDistanceSq = (data[i]-r)**2 + (data[i+1]-g)**2 + (data[i+2]-b)**2;
+                        
+                        if (colorDistanceSq < toleranceSq) {
+                            if (featherAmount > 0) {
+                                // 羽化處理
+                                const distance = Math.sqrt(colorDistanceSq);
+                                const featherStart = tolerance - featherAmount;
+                                if (distance < featherStart) {
+                                    data[i + 3] = 0; // 完全透明
+                                } else {
+                                    const alpha = 1 - ((distance - featherStart) / featherAmount);
+                                    data[i + 3] = Math.max(0, Math.floor(data[i + 3] * alpha));
+                                }
+                            } else {
+                                data[i + 3] = 0; // 直接設為透明
+                            }
+                        }
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            } catch (error) { console.error('Error in removeBackgroundEnhanced:', error); }
+        }
+
+    </script>
+</body>
+</html> 
