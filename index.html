@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>For SAP Item Photo - 4.2 (Enhanced Background Removal)</title>
+    <!-- Title updated -->
+    <title>For SAP Item Photo - 4.1 (ZIP Output)</title>
+    <!-- *** Include JSZip library via CDN *** -->
+    <!-- Make sure jszip.min.js is in the 'dist' folder or update path -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body {
@@ -22,7 +25,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 800px;
+            width: 750px; /* Slightly wider for new option */
         }
         .drop-zone {
             border: 2px dashed #ccc;
@@ -38,7 +41,7 @@
         input[type="file"] {
             margin: 10px 0;
         }
-        input[type="text"], input[type="number"] {
+        input[type="text"] {
             padding: 5px;
             margin: 5px 0;
         }
@@ -68,36 +71,36 @@
             margin: 5px 0;
             padding: 8px 5px;
             border-bottom: 1px solid #eee;
-            gap: 6px;
+            gap: 6px; /* Adjusted gap */
         }
         .file-item:last-child {
             border-bottom: none;
         }
-        .file-item span {
+        .file-item span { /* File name */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            min-width: 80px;
-            max-width: 150px;
+            min-width: 80px; /* Adjusted width */
+            max-width: 150px; /* Adjusted width */
             flex-shrink: 1;
             font-size: 0.9em;
         }
-        .file-item input[type="text"] {
+        .file-item input[type="text"] { /* Output name */
             flex: 1 1 auto;
-            min-width: 80px;
+            min-width: 80px; /* Adjusted width */
             margin-left: 5px;
         }
         .file-item label {
              white-space: nowrap;
              font-size: 0.9em;
-             margin-left: 4px;
+             margin-left: 4px; /* Slightly reduce margin */
              display: flex;
              align-items: center;
-             cursor: pointer;
+             cursor: pointer; /* Make label clickable */
         }
         .file-item input[type="checkbox"] {
             margin-right: 3px;
-            vertical-align: middle;
+            vertical-align: middle; /* Align checkbox better */
         }
         button {
             padding: 10px 20px;
@@ -119,72 +122,21 @@
             color: red;
             font-weight: bold;
         }
-        .bg-options {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            border-left: 1px solid #ddd;
-            padding-left: 8px;
-            margin-left: 5px;
-        }
-        .bg-option-group {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .bg-option-group label {
-            font-size: 0.8em;
-            margin: 0;
-        }
-        .bg-option-group input[type="number"] {
-            width: 50px;
-            font-size: 0.8em;
-        }
-        .advanced-settings {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px 0;
-            text-align: left;
-        }
-        .advanced-settings h4 {
-            margin: 0 0 10px 0;
-            color: #495057;
-        }
-        .setting-group {
+        .bg-options { /* Container for background options */
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin: 5px 0;
-        }
-        .setting-group label {
-            min-width: 120px;
-            font-size: 0.9em;
+            gap: 5px; /* Space between background options */
+            border-left: 1px solid #ddd; /* Separator */
+            padding-left: 8px; /* Space after separator */
+            margin-left: 5px; /* Space before separator */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>For SAP Item Photo - 4.2 (Enhanced)</h2>
-        <h4>自動調整大小為600x600並轉為灰階(PNG)，支援多重背景處理選項。處理後打包成ZIP下載。</h4>
-        
-        <div class="advanced-settings">
-            <h4>全域設定</h4>
-            <div class="setting-group">
-                <label>去背容差:</label>
-                <input type="number" id="globalTolerance" value="50" min="10" max="200" title="顏色相似度容差 (較低=更精確)">
-            </div>
-            <div class="setting-group">
-                <label>邊緣羽化:</label>
-                <input type="number" id="globalFeather" value="10" min="0" max="50" title="邊緣羽化像素數">
-            </div>
-            <div class="setting-group">
-                <label>取樣密度:</label>
-                <input type="number" id="globalSampleDist" value="3" min="1" max="10" title="邊緣取樣間隔">
-            </div>
-        </div>
-        
+        <h2>For SAP Item Photo - 4.1</h2>
+        <!-- Updated description -->
+        <h4>自動調整大小為600x600並轉為灰階(PNG)，可選背景處理(預設填白)。處理後打包成ZIP下載。</h4>
         <div id="dropZone" class="drop-zone">
             拖放圖片到此處或點擊選擇檔案 (可批量)
             <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
@@ -207,7 +159,7 @@
         let imageDataArray = [];
         const MAX_FILES = 100;
 
-        // Drag & Drop Events
+        // Drag & Drop Events (remain the same)
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
         dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
         dropZone.addEventListener('drop', (e) => {
@@ -218,7 +170,7 @@
         dropZone.addEventListener('click', () => { imageInput.click(); });
         imageInput.addEventListener('change', () => {
             handleFiles(imageInput.files);
-            imageInput.value = '';
+            imageInput.value = ''; // Clear input for re-selection
         });
 
         function handleFiles(files) {
@@ -253,7 +205,7 @@
             imageDataArray = new Array(filesToProcess.length);
 
             status.textContent = `已選擇 ${filesToProcess.length} 個圖片檔案。請確認檔名與背景選項。`;
-            fileList.innerHTML = '';
+            fileList.innerHTML = ''; // Clear previous list
 
             let loadPromises = filesToProcess.map((file, index) => {
                 return new Promise((resolve, reject) => {
@@ -265,25 +217,14 @@
                     previewCanvas.id = `preview-${index}`;
                     const defaultName = file.name.split('.').slice(0, -1).join('.') || file.name;
 
-                    // 改進的選項：允許多重選擇
+                    // *** UPDATED: Add "Fill White" checkbox and group options ***
                     div.innerHTML = `
                         <span title="${file.name}">${file.name}</span>
                         <input type="text" value="${defaultName}" data-index="${index}" title="輸出檔名 (不含.png)">
                         <div class="bg-options" data-index="${index}">
-                            <div class="bg-option-group">
-                                <label title="將背景填充為白色"><input type="checkbox" class="fill-white-bg" data-index="${index}"> 填白</label>
-                            </div>
-                            <div class="bg-option-group">
-                                <label title="使用圖片主要顏色填充透明區域"><input type="checkbox" class="fill-dominant-bg" data-index="${index}"> 填充主色</label>
-                            </div>
-                            <div class="bg-option-group">
-                                <label title="移除背景色"><input type="checkbox" class="remove-bg" data-index="${index}"> 去背</label>
-                                <input type="number" class="tolerance" value="50" min="10" max="200" title="容差" style="width: 40px;">
-                            </div>
-                            <div class="bg-option-group">
-                                <label title="邊緣羽化"><input type="checkbox" class="feather-edges" data-index="${index}"> 羽化</label>
-                                <input type="number" class="feather-amount" value="5" min="1" max="20" title="羽化程度" style="width: 40px;">
-                            </div>
+                            <label title="將背景填充為白色 (預設)"><input type="checkbox" class="fill-white-bg" data-index="${index}" checked> 填白</label>
+                            <label title="使用圖片主要顏色填充透明區域"><input type="checkbox" class="fill-dominant-bg" data-index="${index}"> 填充</label>
+                            <label title="嘗試將圖片主要背景色變為透明"><input type="checkbox" class="remove-bg" data-index="${index}"> 移除</label>
                         </div>
                     `;
                     div.prepend(previewCanvas);
@@ -294,7 +235,7 @@
                         const img = new Image();
                         img.onload = () => {
                             imageDataArray[index] = { img, file };
-                            updatePreview(index);
+                            updatePreview(index); // Update preview after image loads
                             resolve();
                         };
                         img.onerror = () => {
@@ -311,14 +252,38 @@
                     };
                     reader.readAsDataURL(file);
 
-                    // 監聽選項變更
+                    // *** NEW: Checkbox exclusivity logic ***
                     const bgOptionsDiv = div.querySelector('.bg-options');
-                    bgOptionsDiv.addEventListener('change', () => {
-                        updatePreview(index);
-                    });
-                });
-            });
+                    const fillWhiteCheckbox = bgOptionsDiv.querySelector('.fill-white-bg');
+                    const fillDominantCheckbox = bgOptionsDiv.querySelector('.fill-dominant-bg');
+                    const removeCheckbox = bgOptionsDiv.querySelector('.remove-bg');
+                    const checkboxes = [fillWhiteCheckbox, fillDominantCheckbox, removeCheckbox];
 
+                    checkboxes.forEach(checkbox => {
+                        checkbox.addEventListener('change', (e) => {
+                            const currentCheckbox = e.target;
+                            const currentIndex = currentCheckbox.dataset.index;
+                            if (currentCheckbox.checked) {
+                                // Uncheck other checkboxes in the same group
+                                checkboxes.forEach(cb => {
+                                    if (cb !== currentCheckbox && cb.dataset.index === currentIndex) {
+                                        cb.checked = false;
+                                    }
+                                });
+                            } else {
+                                // If user unchecks the currently checked one, re-check the default (Fill White)
+                                const isAnyChecked = checkboxes.some(cb => cb.checked);
+                                if (!isAnyChecked) {
+                                    fillWhiteCheckbox.checked = true;
+                                }
+                            }
+                            updatePreview(currentIndex); // Update preview on change
+                        });
+                    });
+                }); // End of new Promise
+            }); // End of map
+
+            // Wait for all images to attempt loading
             Promise.allSettled(loadPromises).then(results => {
                 const loadedSuccessfully = results.some(r => r.status === 'fulfilled');
                 const failedCount = results.filter(r => r.status === 'rejected').length;
@@ -344,7 +309,8 @@
                  itemDiv.style.opacity = '0.5';
                  itemDiv.style.borderLeft = '3px solid red';
                  itemDiv.title = message;
-                 itemDiv.querySelectorAll('input').forEach(cb => cb.disabled = true);
+                 // Disable checkboxes for errored items
+                 itemDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
              }
              const previewCanvas = document.getElementById(`preview-${index}`);
              if (previewCanvas) {
@@ -380,42 +346,54 @@
 
                 previewCtx.clearRect(0, 0, previewSize, previewSize);
 
+                // --- Apply temporary effects for preview ---
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = previewSize;
                 tempCanvas.height = previewSize;
                 const tempCtx = tempCanvas.getContext('2d');
 
-                // 獲取選項狀態
-                const fillWhite = document.querySelector(`.fill-white-bg[data-index="${index}"]`)?.checked;
-                const fillDominant = document.querySelector(`.fill-dominant-bg[data-index="${index}"]`)?.checked;
-                const removeBg = document.querySelector(`.remove-bg[data-index="${index}"]`)?.checked;
-                const featherEdges = document.querySelector(`.feather-edges[data-index="${index}"]`)?.checked;
-                const tolerance = parseInt(document.querySelector(`.tolerance[data-index="${index}"]`)?.value || 50);
-                const featherAmount = parseInt(document.querySelector(`.feather-amount[data-index="${index}"]`)?.value || 5);
+                // Get checkbox states for this item
+                const fillWhiteCheckbox = document.querySelector(`.fill-white-bg[data-index="${index}"]`);
+                const fillDominantCheckbox = document.querySelector(`.fill-dominant-bg[data-index="${index}"]`);
+                const removeBgCheckbox = document.querySelector(`.remove-bg[data-index="${index}"]`);
 
-                // 背景處理
-                tempCtx.clearRect(0, 0, previewSize, previewSize);
-                if (fillWhite) {
+                // --- Preview Initial Background ---
+                tempCtx.clearRect(0, 0, previewSize, previewSize); // Start fresh
+                if (fillWhiteCheckbox?.checked) {
                     tempCtx.fillStyle = 'white';
                     tempCtx.fillRect(0, 0, previewSize, previewSize);
                 }
+                // If removing bg, leave transparent initially for checkerboard effect later
+                // If filling dominant, also leave transparent initially, fill after drawing
 
+                // Draw the scaled image onto the temp canvas
                 tempCtx.drawImage(img, offsetX, offsetY, newWidth, newHeight);
 
-                // 後處理
-                if (removeBg) {
+                // --- Preview Post-Draw Effects ---
+                let showCheckerboard = false;
+                if (removeBgCheckbox?.checked) {
                     let bgColor = getBackgroundColor(tempCtx, previewSize, previewSize);
-                    if (bgColor) {
-                        removeBackgroundEnhanced(tempCtx, previewSize, previewSize, bgColor, tolerance, featherEdges ? featherAmount : 0);
-                    }
-                } else if (fillDominant) {
+                    if (bgColor) removeBackground(tempCtx, previewSize, previewSize, bgColor);
+                    showCheckerboard = true; // Indicate transparency needed
+                } else if (fillDominantCheckbox?.checked) {
                     let bgColor = getBackgroundColor(tempCtx, previewSize, previewSize);
-                    if (bgColor) {
-                        fillTransparentBackground(tempCtx, previewSize, previewSize, bgColor);
-                    }
-                }
+                    // Fill only transparent areas *after* drawing image
+                    if (bgColor) fillTransparentBackground(tempCtx, previewSize, previewSize, bgColor);
+                 } else if (!fillWhiteCheckbox?.checked) {
+                     // If *nothing* is checked (shouldn't happen with the new logic, but as fallback)
+                     // or if fillDominant was chosen but couldn't find color, ensure white background
+                     const tempData = tempCtx.getImageData(0,0,previewSize, previewSize);
+                     const data = tempData.data;
+                     for(let i=0; i<data.length; i+=4) {
+                         if(data[i+3] < 255) { // If transparent
+                             data[i] = 255; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255;
+                         }
+                     }
+                     tempCtx.putImageData(tempData, 0,0);
+                 }
 
-                // 灰階處理
+
+                // Apply grayscale preview effect on temp canvas
                 const tempImageData = tempCtx.getImageData(0, 0, previewSize, previewSize);
                 const tempData = tempImageData.data;
                 for (let i = 0; i < tempData.length; i += 4) {
@@ -424,18 +402,15 @@
                 }
                 tempCtx.putImageData(tempImageData, 0, 0);
 
-                // 顯示預覽
-                previewCtx.clearRect(0, 0, previewSize, previewSize);
-                if (removeBg) {
-                    // 顯示棋盤格背景表示透明
-                    previewCtx.fillStyle = '#eee'; 
-                    previewCtx.fillRect(0,0,previewSize/2,previewSize/2); 
-                    previewCtx.fillRect(previewSize/2,previewSize/2,previewSize/2,previewSize/2);
-                    previewCtx.fillStyle = '#ccc'; 
-                    previewCtx.fillRect(previewSize/2,0,previewSize/2,previewSize/2); 
-                    previewCtx.fillRect(0,previewSize/2,previewSize/2,previewSize/2);
+                // Draw the final preview from the temp canvas back to the visible preview canvas
+                previewCtx.clearRect(0, 0, previewSize, previewSize); // Clear original
+
+                // Draw checkerboard *behind* the processed image if removeBg is checked
+                if (showCheckerboard) {
+                    previewCtx.fillStyle = '#eee'; previewCtx.fillRect(0,0,previewSize/2,previewSize/2); previewCtx.fillRect(previewSize/2,previewSize/2,previewSize/2,previewSize/2);
+                    previewCtx.fillStyle = '#ccc'; previewCtx.fillRect(previewSize/2,0,previewSize/2,previewSize/2); previewCtx.fillRect(0,previewSize/2,previewSize/2,previewSize/2);
                 }
-                previewCtx.drawImage(tempCanvas, 0, 0);
+                previewCtx.drawImage(tempCanvas, 0, 0); // Draw processed preview
 
             } catch (error) {
                 console.error(`Error updating preview for index ${index}:`, error);
@@ -455,27 +430,25 @@
             processButton.disabled = true;
             processButton.textContent = '處理中...';
 
+            // Capture custom names and background choices
             const customNames = filesToProcess.map((_, index) => {
                 const input = fileList.querySelector(`input[type="text"][data-index="${index}"]`);
                 return input ? input.value.trim() : `processed_${index + 1}`;
             });
+            // *** UPDATED: Capture all three choices ***
+            const fillWhiteChoices = filesToProcess.map((_, index) => fileList.querySelector(`.fill-white-bg[data-index="${index}"]`)?.checked ?? true); // Default true if query fails
+            const fillDominantChoices = filesToProcess.map((_, index) => fileList.querySelector(`.fill-dominant-bg[data-index="${index}"]`)?.checked ?? false);
+            const removeBgChoices = filesToProcess.map((_, index) => fileList.querySelector(`.remove-bg[data-index="${index}"]`)?.checked ?? false);
 
-            const options = filesToProcess.map((_, index) => ({
-                fillWhite: fileList.querySelector(`.fill-white-bg[data-index="${index}"]`)?.checked ?? false,
-                fillDominant: fileList.querySelector(`.fill-dominant-bg[data-index="${index}"]`)?.checked ?? false,
-                removeBg: fileList.querySelector(`.remove-bg[data-index="${index}"]`)?.checked ?? false,
-                featherEdges: fileList.querySelector(`.feather-edges[data-index="${index}"]`)?.checked ?? false,
-                tolerance: parseInt(fileList.querySelector(`.tolerance[data-index="${index}"]`)?.value || 50),
-                featherAmount: parseInt(fileList.querySelector(`.feather-amount[data-index="${index}"]`)?.value || 5)
-            }));
-
-            await processFilesAndZip(filesToProcess, customNames, options);
+            // Call the zip function with all choices
+            await processFilesAndZip(filesToProcess, customNames, fillWhiteChoices, fillDominantChoices, removeBgChoices);
 
             processButton.disabled = false;
             processButton.textContent = '開始處理並打包 ZIP';
         });
 
-        async function processFilesAndZip(files, customNames, options) {
+        // *** UPDATED Function signature and logic ***
+        async function processFilesAndZip(files, customNames, fillWhiteChoices, fillDominantChoices, removeBgChoices) {
             const processedBlobs = [];
             const totalFiles = files.length;
             let processedCount = 0;
@@ -486,26 +459,30 @@
             for (let index = 0; index < totalFiles; index++) {
                 const file = files[index];
                 const imgData = imageDataArray[index];
-                const option = options[index];
 
                 if (!imgData || !imgData.img) {
                     console.warn(`Skipping ${file.name}: Image data not loaded.`);
                     errorCount++;
                     processedCount++;
                     updateProgress(processedCount, totalFiles);
-                    markItemAsError(index, `跳過: 圖片未載入`);
+                    markItemAsError(index, `跳過: 圖片未載入`); // Mark as error in UI
                     continue;
                 }
 
                 const img = imgData.img;
                 const customName = customNames[index];
+                // Get the choices for this specific index
+                const fillWhite = fillWhiteChoices[index];
+                const fillDominant = fillDominantChoices[index];
+                const removeBg = removeBgChoices[index];
+
                 const finalName = customName || file.name.split('.').slice(0, -1).join('.') || `image_${index + 1}`;
                 const outputFileName = `${finalName}.png`;
 
                 try {
                     canvas.width = 600;
                     canvas.height = 600;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Start clean
 
                     let scale = Math.min(600 / img.width, 600 / img.height);
                     let newWidth = img.width * scale;
@@ -513,41 +490,53 @@
                     let offsetX = (600 - newWidth) / 2;
                     let offsetY = (600 - newHeight) / 2;
 
-                    // 背景處理
-                    if (option.fillWhite) {
+                    // --- Background Handling (Before Draw) ---
+                    if (fillWhite) {
                         ctx.fillStyle = 'white';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                     }
+                    // If removeBg or fillDominant, leave transparent for now
 
+                    // --- Draw Image ---
                     ctx.drawImage(img, offsetX, offsetY, newWidth, newHeight);
 
-                    // 後處理
-                    if (option.removeBg) {
+                    // --- Background Handling (Post Draw) ---
+                    if (removeBg) {
                         let bgColor = getBackgroundColor(ctx, canvas.width, canvas.height);
-                        if (bgColor) {
-                            removeBackgroundEnhanced(ctx, canvas.width, canvas.height, bgColor, option.tolerance, option.featherEdges ? option.featherAmount : 0);
+                        if (bgColor) removeBackground(ctx, canvas.width, canvas.height, bgColor);
+                    } else if (fillDominant) {
+                        let dominantColor = getBackgroundColor(ctx, canvas.width, canvas.height);
+                        if (dominantColor) fillTransparentBackground(ctx, canvas.width, canvas.height, dominantColor);
+                    } else if (!fillWhite) {
+                        // Fallback / Default: Ensure fully white background if no other option applied
+                        // This covers cases where the image had transparency but wasn't explicitly filled white/dominant or removed
+                        const currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = currentImageData.data;
+                        for (let i = 0; i < data.length; i += 4) {
+                             if (data[i + 3] < 255) { // If not fully opaque, make it white
+                                data[i] = 255; data[i + 1] = 255; data[i + 2] = 255; data[i + 3] = 255;
+                            }
                         }
-                    } else if (option.fillDominant) {
-                        let bgColor = getBackgroundColor(ctx, canvas.width, canvas.height);
-                        if (bgColor) {
-                            fillTransparentBackground(ctx, canvas.width, canvas.height, bgColor);
-                        }
+                        ctx.putImageData(currentImageData, 0, 0);
                     }
 
-                    // 灰階處理
+                    // --- Grayscale (After all background processing) ---
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
                     for (let i = 0; i < data.length; i += 4) {
                         const gray = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
                         data[i] = data[i + 1] = data[i + 2] = gray;
-                        if (!option.removeBg) data[i+3] = 255;
+                        // Ensure alpha is 255 unless removeBg was chosen (removeBackground sets alpha to 0)
+                        if (!removeBg) data[i+3] = 255;
                     }
                     ctx.putImageData(imageData, 0, 0);
 
+                    // Get Blob
                     const blob = await new Promise((resolve) => { canvas.toBlob(resolve, 'image/png'); });
 
                     if (blob) {
                         processedBlobs.push({ filename: outputFileName, blob: blob });
+                        // Mark success visually
                         const itemDiv = document.getElementById(`file-item-${index}`);
                         if(itemDiv) itemDiv.style.borderLeft = '3px solid green';
                     } else {
@@ -564,8 +553,9 @@
                     updateProgress(processedCount, totalFiles);
                     markItemAsError(index, `處理失敗: ${error.message.substring(0, 50)}`);
                 }
-            }
+            } // End of loop
 
+            // --- ZIP Generation ---
             if (processedBlobs.length > 0) {
                 status.textContent = `處理完成 (${totalFiles - errorCount} 成功 / ${errorCount} 失敗)。正在產生 ZIP 檔案...`;
                 try {
@@ -601,8 +591,10 @@
                  status.textContent = '沒有成功處理的檔案可供打包。';
                  status.classList.add('error-message');
             }
+             // Reset UI fully after processing
              resetUI();
         }
+
 
         function updateProgress(completed, total) {
             const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -617,19 +609,26 @@
             processButton.style.display = 'none';
             processButton.disabled = true;
             processButton.textContent = '開始處理並打包 ZIP';
+            // Reset status after a short delay
             setTimeout(() => {
-                if (!processButton.disabled) {
+                if (!processButton.disabled) { // Only reset if not actively processing again
                    status.textContent = '等待上傳...';
                    status.classList.remove('error-message');
                 }
             }, 5000);
          }
 
-        // 改進的背景處理函數
+        // --- Background Processing Functions ---
+        // (kMeansClustering, getBackgroundColor, fillTransparentBackground, removeBackground)
+        // These functions remain the same as in your provided code.
+        // Ensure they are included below this point.
+
+        // Placeholder for required helper functions (ensure these are present and correct)
         function kMeansClustering(pixels, k = 3, maxIterations = 10) {
              if (!pixels || pixels.length === 0) return null;
              try {
-                 const sampleSize = Math.min(pixels.length, 500);
+                 // Limit sample size for performance
+                 const sampleSize = Math.min(pixels.length, 300); // Reduced sample size further
                  const samplePixels = [];
                  const step = Math.max(1, Math.floor(pixels.length / sampleSize));
                  for(let i = 0; i < pixels.length; i += step) {
@@ -637,25 +636,30 @@
                     if(samplePixels.length >= sampleSize) break;
                  }
 
-                 if (samplePixels.length === 0) return null;
+                 if (samplePixels.length === 0) return null; // No pixels to sample
 
+                 // Initialize centroids using a basic seeding (first k distinct pixels or random)
                  let centroids = [];
                  let usedIndices = new Set();
                  for(let i = 0; i < samplePixels.length && centroids.length < k; ++i) {
+                     // Simple check for distinctness (can be improved)
                      const pixelStr = samplePixels[i].join(',');
                      if(!usedIndices.has(pixelStr)) {
                         centroids.push([...samplePixels[i]]);
                         usedIndices.add(pixelStr);
                      }
                  }
+                 // Fill remaining centroids randomly if not enough distinct ones found
                  while(centroids.length < k && samplePixels.length > 0) {
                      centroids.push([...samplePixels[Math.floor(Math.random() * samplePixels.length)]]);
                  }
-                 if(centroids.length === 0) return null;
+                 if(centroids.length === 0) return null; // Cannot proceed without centroids
 
-                 let clusters = new Array(samplePixels.length);
+
+                 let clusters = new Array(samplePixels.length); // Store index of centroid for each pixel
                  for (let iteration = 0; iteration < maxIterations; iteration++) {
                      let changed = false;
+                     // Assign pixels to nearest centroid
                      for (let i = 0; i < samplePixels.length; i++) {
                          let minDistanceSq = Infinity;
                          let clusterIndex = -1;
@@ -672,8 +676,9 @@
                          }
                      }
 
-                     if (!changed && iteration > 0) break;
+                     if (!changed && iteration > 0) break; // Converged
 
+                     // Recalculate centroids
                      let counts = new Array(centroids.length).fill(0);
                      let newCentroids = Array.from({ length: centroids.length }, () => [0, 0, 0]);
                      for (let i = 0; i < samplePixels.length; i++) {
@@ -694,11 +699,14 @@
                                  Math.round(newCentroids[j][2] / counts[j])
                              ];
                          } else if (samplePixels.length > 0){
+                             // Reinitialize empty cluster centroid randomly
                              centroids[j] = [...samplePixels[Math.floor(Math.random() * samplePixels.length)]];
+                             // Consider more robust re-initialization if needed
                          }
                      }
-                 }
+                 } // End iterations
 
+                 // Determine the dominant cluster (most pixels assigned)
                  let clusterCounts = new Array(centroids.length).fill(0);
                  clusters.forEach(cIdx => { if (cIdx !== undefined && cIdx >=0 && cIdx < centroids.length) clusterCounts[cIdx]++; });
 
@@ -709,33 +717,36 @@
                      }
                  }
 
+                 // Return the color of the dominant centroid
                  return centroids[maxClusterIndex] ? { r: centroids[maxClusterIndex][0], g: centroids[maxClusterIndex][1], b: centroids[maxClusterIndex][2] } : null;
 
              } catch (error) { console.error('Error in kMeansClustering:', error); return null; }
         }
+
 
         function getBackgroundColor(ctx, width, height) {
             try {
                 const imageData = ctx.getImageData(0, 0, width, height);
                 const data = imageData.data;
                 const borderPixels = [];
-                const sampleDist = parseInt(document.getElementById('globalSampleDist')?.value || 3);
+                const sampleDist = 5; // Sample pixels near the border
 
-                // 取樣邊緣像素
+                // Sample border pixels (top, bottom, left, right)
                 for(let x = 0; x < width; x+= sampleDist) {
                     let idxTop = (0 * width + x) * 4;
                     let idxBottom = ((height - 1) * width + x) * 4;
                     if(data[idxTop + 3] === 255) borderPixels.push([data[idxTop], data[idxTop+1], data[idxTop+2]]);
                     if(data[idxBottom + 3] === 255) borderPixels.push([data[idxBottom], data[idxBottom+1], data[idxBottom+2]]);
                 }
-                 for(let y = 1; y < height - 1; y+= sampleDist) {
+                 for(let y = 1; y < height - 1; y+= sampleDist) { // Avoid corners already sampled
                     let idxLeft = (y * width + 0) * 4;
                     let idxRight = (y * width + (width - 1)) * 4;
                      if(data[idxLeft + 3] === 255) borderPixels.push([data[idxLeft], data[idxLeft+1], data[idxLeft+2]]);
                      if(data[idxRight + 3] === 255) borderPixels.push([data[idxRight], data[idxRight+1], data[idxRight+2]]);
                  }
 
-                if (borderPixels.length < 5) {
+
+                if (borderPixels.length < 5) { // If very few border pixels, sample all opaque pixels
                     console.warn("Few border pixels found, sampling all opaque pixels for background color.");
                     const allOpaquePixels = [];
                      for (let i = 0; i < data.length; i += 4) {
@@ -743,62 +754,95 @@
                             allOpaquePixels.push([data[i], data[i+1], data[i+2]]);
                          }
                      }
-                     if(allOpaquePixels.length === 0) return { r: 255, g: 255, b: 255 };
-                     return kMeansClustering(allOpaquePixels, 2);
+                     if(allOpaquePixels.length === 0) return { r: 255, g: 255, b: 255 }; // Default white if truly empty/transparent
+                     return kMeansClustering(allOpaquePixels, 2); // Use k=2 for potentially bimodal (foreground/background)
                 }
 
+                // Use k-means on border pixels, k=2 is often good for border analysis
                 return kMeansClustering(borderPixels, 2);
 
             } catch (error) {
                 console.error('Error in getBackgroundColor:', error);
-                return { r: 255, g: 255, b: 255 };
+                return { r: 255, g: 255, b: 255 }; // Default white on error
             }
         }
+
 
         function fillTransparentBackground(ctx, width, height, color) {
             if (!color) return;
             try {
-                ctx.globalCompositeOperation = 'destination-over';
-                ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-                ctx.fillRect(0,0,width,height);
-                ctx.globalCompositeOperation = 'source-over';
+                // Get image data only once
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                const r = color.r, g = color.g, b = color.b;
+
+                // Create a temporary canvas to draw the fill color
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                // Fill the temp canvas with the target color
+                tempCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                tempCtx.fillRect(0, 0, width, height);
+
+                // Draw the original image data *over* the fill color
+                // This preserves opaque pixels and fills only transparent/semi-transparent ones
+                tempCtx.putImageData(imageData, 0, 0);
+
+                 // Now, draw the result back onto the original context
+                 // Use globalCompositeOperation 'destination-over' to draw the fill *behind* existing pixels
+                 // This is another way to think about it:
+                 ctx.globalCompositeOperation = 'destination-over';
+                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                 ctx.fillRect(0,0,width,height);
+                 ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
+
+
+                /* // Original pixel manipulation method (can be slower)
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i + 3] < 255) { // If not fully opaque
+                        // Blend with background color? Or just replace? Replacing is simpler here.
+                        data[i] = r;
+                        data[i + 1] = g;
+                        data[i + 2] = b;
+                        data[i + 3] = 255; // Make it fully opaque
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+                */
             } catch (error) { console.error('Error in fillTransparentBackground:', error); }
         }
 
-        // 改進的去背函數，支援羽化
-        function removeBackgroundEnhanced(ctx, width, height, backgroundColor, tolerance = 50, featherAmount = 0) {
+
+        function removeBackground(ctx, width, height, backgroundColor) {
             if (!backgroundColor) return;
             try {
                 const imageData = ctx.getImageData(0, 0, width, height);
                 const data = imageData.data;
+                // Increased tolerance slightly, adjust based on image types
+                const tolerance = 70;
                 const toleranceSq = tolerance * tolerance;
                 const r = backgroundColor.r, g = backgroundColor.g, b = backgroundColor.b;
 
                 for (let i = 0; i < data.length; i += 4) {
+                    // Check alpha first - no need to process fully transparent pixels
                     if (data[i + 3] > 0) {
                         const colorDistanceSq = (data[i]-r)**2 + (data[i+1]-g)**2 + (data[i+2]-b)**2;
-                        
+                        // Check if distance is within tolerance
                         if (colorDistanceSq < toleranceSq) {
-                            if (featherAmount > 0) {
-                                // 羽化處理
-                                const distance = Math.sqrt(colorDistanceSq);
-                                const featherStart = tolerance - featherAmount;
-                                if (distance < featherStart) {
-                                    data[i + 3] = 0; // 完全透明
-                                } else {
-                                    const alpha = 1 - ((distance - featherStart) / featherAmount);
-                                    data[i + 3] = Math.max(0, Math.floor(data[i + 3] * alpha));
-                                }
-                            } else {
-                                data[i + 3] = 0; // 直接設為透明
-                            }
+                             data[i + 3] = 0; // Make transparent
                         }
+                         // Optional: Feathering edge (more complex, adds gradient alpha)
+                         // else if (colorDistanceSq < (tolerance + feather) * (tolerance + feather)) {
+                         //     data[i + 3] = Math.max(0, data[i + 3] * (1 - (colorDistanceSq - toleranceSq) / ((tolerance + feather)* (tolerance + feather) - toleranceSq)));
+                         // }
                     }
                 }
                 ctx.putImageData(imageData, 0, 0);
-            } catch (error) { console.error('Error in removeBackgroundEnhanced:', error); }
+            } catch (error) { console.error('Error in removeBackground:', error); }
         }
 
     </script>
 </body>
-</html> 
+</html>
